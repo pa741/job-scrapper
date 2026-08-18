@@ -18,7 +18,8 @@ A small Python script that scrapes job postings via [JobSpy](https://github.com/
 - **Secrets only via environment variables**, loaded with `python-dotenv`. Never hardcode connection strings, proxy credentials, or API keys — use `.env.example` placeholders and document the variable in the README.
 - **Search parameters only via `config.yaml`.** Don't add argparse/CLI flags or extra env vars for search behavior — keep one config surface.
 - Keep the script dependency-light and single-file unless the user asks for more structure (e.g. multiple scrapers, scheduling, tests).
-- This repo has no CI/tests configured. If adding either, keep them minimal and don't require real Azure/proxy credentials to run (mock or skip network calls).
+- This repo has no test suite configured. If adding one, keep it minimal and don't require real Azure/proxy credentials to run (mock or skip network calls).
+- CI is a single workflow, `.github/workflows/docker-publish.yml`: on pushing a tag matching `vX.X`, it builds `Dockerfile` and pushes to GHCR as `<version>` and `latest`. It doesn't run the scraper — no Azure/proxy secrets are needed for it to pass. Keep `Dockerfile`/`.dockerignore` in sync with `requirements.txt`/file list if either changes.
 
 ## Running locally
 

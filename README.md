@@ -46,6 +46,21 @@ Each run scrapes jobs per `config.yaml`, writes them to an in-memory CSV, and up
 jobs/<search-term-slug>_<UTC timestamp>.csv
 ```
 
+## Container image
+
+A GitHub Actions workflow (`.github/workflows/docker-publish.yml`) builds and pushes a Docker image to GitHub Container Registry whenever a tag matching `vX.X` (e.g. `v1.0`, `v1.2.3`) is pushed. It publishes both `ghcr.io/<owner>/<repo>:<version>` (without the `v` prefix) and `:latest`.
+
+```bash
+git tag v1.0
+git push origin v1.0
+```
+
+To run the published image locally, pass the same environment variables from `.env`:
+
+```bash
+docker run --rm --env-file .env ghcr.io/<owner>/<repo>:latest
+```
+
 ## Notes
 
 - Job sites actively rate-limit and block scrapers; using proxies is strongly recommended for anything beyond light, occasional use.

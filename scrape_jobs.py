@@ -13,6 +13,7 @@ import os
 import re
 from datetime import datetime, timezone
 
+import pandas as pd
 import yaml
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
@@ -41,6 +42,26 @@ def load_proxies() -> list[str] | None:
 def slugify(text: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", text.strip().lower()).strip("-")
     return slug or "jobs"
+
+
+def deduplicate_jobs(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop duplicate postings: exact repeats (same job_url) and the same
+    job cross-posted under different URLs on multiple sites (matched by
+    normalized title/company/location)."""
+    before = len(df)
+
+    if "job_url" in df.columns:
+        df = df.drop_duplicates(subset="job_url")
+
+    key_cols = [c for c in ("title", "company", "location") if c in df.columns]
+    if key_cols:
+        normalized = df[key_cols].apply(lambda s: s.astype(str).str.strip().str.lower())
+        df = df[~normalized.duplicated()]
+
+    removed = before - len(df)
+    if removed:
+        logger.info("Removed %d duplicate job listing(s); %d unique remain.", removed, len(df))
+    return df.reset_index(drop=True)
 
 
 def upload_csv_to_blob(csv_bytes: bytes, blob_name: str) -> str:
@@ -78,6 +99,8 @@ def main() -> None:
 
     jobs_df = scrape_jobs(proxies=proxies, **search_config)
     logger.info("Scraped %d job postings.", len(jobs_df))
+
+    jobs_df = deduplicate_jobs(jobs_df)
 
     csv_buffer = io.StringIO()
     jobs_df.to_csv(csv_buffer, index=False)
