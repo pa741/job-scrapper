@@ -2,12 +2,20 @@
 # See https://github.com/speedyapply/JobSpy for the full list of supported
 # site_name values and search options.
 search:
+  # glassdoor omitted: its CSRF-token endpoint currently 404s after Glassdoor's
+  # Next.js migration, so every request gets rejected regardless of location/
+  # search term. Unmerged upstream fix: https://github.com/speedyapply/JobSpy/pull/347
   site_name:
     - indeed
     - linkedin
-    - zip_recruiter
+    - google
+
+  google_search_term: "software engineer"
+
   search_term: "software engineer"
-  location: "Remote"
-  results_wanted: 50
+  enforce_annual_salary: true
+  location: "London, UK"
+  linkedin_fetch_description: true
+  results_wanted: 1000
   hours_old: 24
-  country_indeed: "USA"
+  country_indeed: "UK"

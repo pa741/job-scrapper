@@ -1,0 +1,10 @@
+services:
+  job-scrapper:
+    # Replace <owner>/<repo> with this repo's GHCR image (see README "Container image").
+    image: ghcr.io/<owner>/<repo>:latest
+    environment:
+      AZURE_STORAGE_CONNECTION_STRING: <your-azure-storage-connection-string>
+      AZURE_CONTAINER_NAME: jobs
+      PROXIES: <proxy1-e.g.-user:pass@host:port>,<proxy2>
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro

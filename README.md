@@ -61,6 +61,12 @@ To run the published image locally, pass the same environment variables from `.e
 docker run --rm --env-file .env ghcr.io/<owner>/<repo>:latest
 ```
 
+Or with Docker Compose, using the example `docker-compose.yml`: edit the `image:` line to point at this repo's GHCR image, and fill in the `environment:` values (same variables as `.env.example`). `docker-compose.yml` is tracked in git, so **don't commit real secrets into it** — either keep your filled-in copy uncommitted/local-only, or use `docker-compose.override.yml` (git-ignored) for real values instead.
+
+```bash
+docker compose up
+```
+
 ## Notes
 
 - Job sites actively rate-limit and block scrapers; using proxies is strongly recommended for anything beyond light, occasional use.
