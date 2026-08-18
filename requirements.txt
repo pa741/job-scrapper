@@ -1,0 +1,5 @@
+python-jobspy
+pandas
+azure-storage-blob
+python-dotenv
+pyyaml

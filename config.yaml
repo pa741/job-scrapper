@@ -1,0 +1,13 @@
+# Search parameters passed to jobspy.scrape_jobs().
+# See https://github.com/speedyapply/JobSpy for the full list of supported
+# site_name values and search options.
+search:
+  site_name:
+    - indeed
+    - linkedin
+    - zip_recruiter
+  search_term: "software engineer"
+  location: "Remote"
+  results_wanted: 50
+  hours_old: 72
+  country_indeed: "USA"
