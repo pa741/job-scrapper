@@ -25,7 +25,7 @@ library: commit on `patches`, tag it (`v<upstream-version>-fh<n>`), then bump th
 `requirements.txt` — the pin is what makes a build reproducible, so never point it at a
 branch. A tarball rather than `git+https` is deliberate: `python:3.11-slim` has no `git`.
 
-The fork currently adds `applicants`/`applicant_count` (LinkedIn) and the `freehire` source.
+The fork currently adds `applicants`/`applicant_count` (LinkedIn) and the `freehire` source, which also contributes `source_board`, `summary` and four posting-freshness columns.
 Keep `main` tracking upstream so `patches` stays rebaseable.
 
 ## Conventions

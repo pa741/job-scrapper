@@ -86,6 +86,16 @@ Three CSV columns come from the fork:
 | `applicants` | LinkedIn | The applicant caption verbatim, e.g. `Over 200 applicants`. Requires `linkedin_fetch_description: true`. |
 | `applicant_count` | LinkedIn | The figure parsed out of it, e.g. `200`. |
 | `source_board` | freehire | Which of freehire's crawled boards the posting came from, e.g. `greenhouse`. |
+| `summary` | freehire | A 1–2 sentence synopsis of the posting. |
+| `freshness_class` | freehire | `fresh`, `stale` or `likely-evergreen`. |
+| `posting_age_days` | freehire | Age of the posting in days. |
+| `repost_count` | freehire | How many times the role has been reposted. |
+| `fake_freshness` | freehire | True when the stated posting date looks refreshed rather than real. |
+
+freehire also fills `job_level`, `experience_range` and `company_num_employees`, which are
+existing columns rather than new ones. The four freshness signals are populated on every
+freehire posting and are the ones no scraped board can offer: a board repeats what a listing
+says about itself, these say whether the role has been recycled or the date refreshed.
 
 ## Notes
 
