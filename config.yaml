@@ -24,6 +24,12 @@ search:
   hours_old: 24
   country_indeed: "UK"
 
+  # jobspy's own per-site logging: 0 errors only, 1 +warnings, 2 all. Its default
+  # is 0, which makes a site quietly returning nothing look identical to one that
+  # returned results. At 2 a scheduled run records the per-site counts, and
+  # surfaces freehire's warning when it drops a filter it did not recognise.
+  verbose: 2
+
   # Pull each freehire posting's full description rather than the search index's
   # truncated preview. Costs a bigger response, not extra requests.
   freehire_full_description: true
