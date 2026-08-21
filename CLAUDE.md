@@ -9,7 +9,7 @@ A small Python script that scrapes job postings via [JobSpy](https://github.com/
 ## Key files
 
 - `scrape_jobs.py` — main script: loads config/secrets, calls `jobspy.scrape_jobs`, uploads a CSV to Azure Blob Storage.
-- `config.yaml` — non-secret search parameters (sites, search term, location, results count, etc.). New search options belong here, not as CLI flags or env vars.
+- `config.yaml` — the searches to run: a `defaults:` block plus a `searches:` list, each entry overriding what it names. New search options belong here, not as CLI flags or env vars. Each search uploads its own blob, named after the search; that name is what the platform groups by, so duplicates are refused at load. The older single `search:` block is still accepted (the file is bind-mounted on the NAS and can lag the image), and logs a deprecation warning.
 - `.env.example` — documents required environment variables with placeholder values. Real values go in a local, git-ignored `.env`.
 - `requirements.txt` — plain pip dependencies (no lockfile/poetry by design, to keep the template simple). `python-jobspy` is pinned to a **tag of our own fork**, not PyPI — see below.
 

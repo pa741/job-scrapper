@@ -1,7 +1,13 @@
-# Search parameters passed to jobspy.scrape_jobs().
-# See https://github.com/speedyapply/JobSpy for the full list of supported
-# site_name values and search options.
-search:
+# Searches to run, and the parameters passed to jobspy.scrape_jobs().
+# See https://github.com/pa741/JobSpy for the supported site_name values and
+# search options - that is our fork, and it has options upstream does not.
+#
+# Each search is scraped and uploaded separately, as jobs/<name>_<timestamp>.csv.
+# The name is how the platform tells the searches apart, so it is the axis the
+# dashboard groups by - not just a filename.
+
+# Shared by every search. Anything a search names for itself wins.
+defaults:
   # glassdoor omitted: its CSRF-token endpoint currently 404s after Glassdoor's
   # Next.js migration, so every request gets rejected regardless of location/
   # search term. Unmerged upstream fix: https://github.com/speedyapply/JobSpy/pull/347
@@ -18,16 +24,16 @@ search:
     # by design - there is nothing there to route around.
     - freehire
 
-  # Kept for whenever google is re-enabled above; ignored while it is not.
-  google_search_term: "software engineer"
-
-  search_term: "software engineer"
-  enforce_annual_salary: true
   location: "London, UK"
-  linkedin_fetch_description: true
-  results_wanted: 1000
-  hours_old: 24
   country_indeed: "UK"
+  hours_old: 24
+  enforce_annual_salary: true
+  linkedin_fetch_description: true
+
+  # Searches run one after another, so this is per search and a run costs the sum.
+  # With linkedin_fetch_description on, LinkedIn spends roughly one extra request
+  # per posting, so raising this multiplies across every search.
+  results_wanted: 500
 
   # jobspy's own per-site logging: 0 errors only, 1 +warnings, 2 all. Its default
   # is 0, which makes a site quietly returning nothing look identical to one that
@@ -39,11 +45,34 @@ search:
   # truncated preview. Costs a bigger response, not extra requests.
   freehire_full_description: true
 
-  # Any additional freehire facet, applied over the filters derived from the
-  # options above. Its live vocabulary is at
+searches:
+  # `name` is optional and defaults to the slugified search_term. Set it
+  # explicitly when two searches would otherwise collide - the same search_term
+  # in two locations, say - because a duplicate name is refused at startup rather
+  # than silently merging the two into one search term downstream.
+  - search_term: "software engineer"
+
+  # Add more below. Any option from `defaults` can be overridden per search.
+  #
+  # - search_term: "data engineer"
+  #
+  # - name: python-remote
+  #   search_term: "python developer"
+  #   is_remote: true
+  #   results_wanted: 300
+  #
+  # - name: software-engineer-berlin
+  #   search_term: "software engineer"
+  #   location: "Berlin, Germany"
+  #   country_indeed: "Germany"
+  #
+  # freehire_filters passes any additional freehire facet through, applied over
+  # the filters derived from the options above. Its live vocabulary is at
   # https://freehire.me/api/v1/jobs/facets - an unknown value matches nothing
   # rather than erroring, so check there before adding one.
-  # freehire_filters:
-  #   seniority: senior
-  #   skills: python,go
-  #   work_mode: remote
+  #
+  # - name: senior-go
+  #   search_term: "golang"
+  #   freehire_filters:
+  #     seniority: senior
+  #     skills: go

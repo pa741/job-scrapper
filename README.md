@@ -35,7 +35,20 @@ It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinne
 
    `.env` is git-ignored — only the placeholder `.env.example` is committed.
 
-3. Edit `config.yaml` to set your search parameters (job sites, search term, location, number of results, etc.). See the [JobSpy README](https://github.com/speedyapply/JobSpy) for the full list of supported options.
+3. Edit `config.yaml` to set up your searches. `defaults:` holds what every search shares; each entry under `searches:` overrides the options it names. See the [fork's README](https://github.com/pa741/JobSpy) for the full list of supported options.
+
+   ```yaml
+   defaults:
+     site_name: [indeed, linkedin, freehire]
+     location: "London, UK"
+     results_wanted: 500
+
+   searches:
+     - search_term: "software engineer"
+     - name: python-remote          # optional; defaults to the slugified search_term
+       search_term: "python developer"
+       is_remote: true
+   ```
 
 ## Usage
 
@@ -43,11 +56,21 @@ It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinne
 python scrape_jobs.py
 ```
 
-Each run scrapes jobs per `config.yaml`, writes them to an in-memory CSV, and uploads it to Azure Blob Storage as:
+Each configured search is scraped **in turn** and uploaded as its own blob:
 
 ```
-jobs/<search-term-slug>_<UTC timestamp>.csv
+jobs/<search-name>_<UTC timestamp>.csv
 ```
+
+The name is not just a filename — the platform reads it back out of the blob name to tell
+the searches apart, so it is the axis the dashboard groups by. Two searches resolving to the
+same name are refused at startup rather than silently merging into one.
+
+Searches run sequentially, so a run costs the sum of them: JobSpy already scrapes the boards
+within one search concurrently, and running searches in parallel would multiply the request
+rate against the same boards. Each search uploads as soon as it finishes, so a later failure
+cannot cost an earlier success, and one search failing does not stop the rest — though the
+run still exits non-zero to say so.
 
 ## Container image
 
