@@ -5,15 +5,20 @@ search:
   # glassdoor omitted: its CSRF-token endpoint currently 404s after Glassdoor's
   # Next.js migration, so every request gets rejected regardless of location/
   # search term. Unmerged upstream fix: https://github.com/speedyapply/JobSpy/pull/347
+  # google omitted: its scraper reads a cursor out of the search page's markup and
+  # that markup has moved, so it returns nothing even from a clean IP ("initial
+  # cursor not found"). Through residential proxies it is worse - Google answers
+  # with /sorry/index and 429s until urllib3 gives up. Verified broken on stock
+  # python-jobspy 1.1.82 too, so this is not the fork. Re-enable if we fix it there.
   site_name:
     - indeed
     - linkedin
-    - google
     # Not a scraped board: freehire.me is an aggregator with a public API,
     # covering IT/tech roles crawled from 227 ATS/boards. It ignores PROXIES
     # by design - there is nothing there to route around.
     - freehire
 
+  # Kept for whenever google is re-enabled above; ignored while it is not.
   google_search_term: "software engineer"
 
   search_term: "software engineer"

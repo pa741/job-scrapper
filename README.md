@@ -72,7 +72,9 @@ docker compose up
 
 ## Sources
 
-`config.yaml` currently searches Indeed, LinkedIn, Google and freehire.
+`config.yaml` currently searches Indeed, LinkedIn and freehire. Google and Glassdoor are
+both commented out with the reason inline — the short version is that JobSpy's scrapers for
+them are broken upstream, not misconfigured here.
 
 freehire is the odd one out: it is not scraped but read through a documented public API that
 aggregates 227 ATS and job boards, covering IT/tech roles only. It needs no proxy and does
@@ -100,5 +102,6 @@ says about itself, these say whether the role has been recycled or the date refr
 ## Notes
 
 - Job sites actively rate-limit and block scrapers; using proxies is strongly recommended for anything beyond light, occasional use.
+- A board that fails is logged and skipped, not fatal — the run uploads whatever the other sites returned. If *every* site returns nothing the scraper raises instead of uploading, since an empty CSV would land downstream as a quiet market rather than a broken scraper.
 - Never commit `.env` or real credentials/proxy lists — only `.env.example` with placeholder values should be tracked in git.
 - No license file is included yet; add one (e.g. MIT) before publishing if you want to set usage terms explicitly.

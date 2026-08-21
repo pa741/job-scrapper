@@ -124,6 +124,16 @@ def main() -> None:
 
     jobs_df = deduplicate_jobs(jobs_df)
 
+    if jobs_df.empty:
+        # A single board failing is survivable and jobspy now logs it and carries on,
+        # but every board failing is not something to upload. An empty CSV lands as a
+        # successful run holding no postings, which reads downstream as the market
+        # going quiet rather than the scraper being broken.
+        raise RuntimeError(
+            "Every configured site returned zero postings; see the per-site errors "
+            "above. Refusing to upload an empty CSV."
+        )
+
     csv_buffer = io.StringIO()
     jobs_df.to_csv(csv_buffer, index=False)
     csv_bytes = csv_buffer.getvalue().encode("utf-8")
