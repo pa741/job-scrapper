@@ -39,6 +39,16 @@ def load_proxies() -> list[str] | None:
     return proxies or None
 
 
+def load_freehire_api_key() -> str | None:
+    """freehire's search API is unauthenticated, so an absent key is not an
+    error - it only identifies the caller. Read here rather than in jobspy so
+    every secret in this project enters through one place."""
+    key = os.environ.get("HIREME_API_KEY", "").strip()
+    if not key or key.startswith("<"):
+        return None
+    return key
+
+
 def slugify(text: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", text.strip().lower()).strip("-")
     return slug or "jobs"
@@ -71,13 +81,20 @@ def upload_csv_to_blob(csv_bytes: bytes, blob_name: str) -> str:
             "AZURE_STORAGE_CONNECTION_STRING is not set. Copy .env.example to .env "
             "and fill in a real Azure Storage connection string."
         )
-    container_name = os.environ.get("AZURE_CONTAINER_NAME", "jobs")
+    container_name = os.environ.get("AZURE_CONTAINER_NAME", "jobs-landing")
 
     service_client = BlobServiceClient.from_connection_string(connection_string)
     container_client = service_client.get_container_client(container_name)
     if not container_client.exists():
-        logger.info("Container '%s' does not exist, creating it.", container_name)
-        container_client.create_container()
+        # Deliberately not created here. Auto-creating turns a mistyped
+        # AZURE_CONTAINER_NAME into a successful upload nobody consumes: the wrong
+        # container springs into existence, the run logs clean, and whatever watches
+        # the real container never fires. Failing is the only way that surfaces.
+        raise RuntimeError(
+            f"Container '{container_name}' does not exist in this storage account. "
+            "Check AZURE_CONTAINER_NAME - it is a container name, not the storage "
+            "account name - or create the container before running."
+        )
 
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.upload_blob(csv_bytes, overwrite=True)
@@ -89,15 +106,20 @@ def main() -> None:
 
     search_config = load_search_config()
     proxies = load_proxies()
+    freehire_api_key = load_freehire_api_key()
     logger.info(
-        "Loaded search config for sites=%s search_term=%r location=%r (proxies=%d)",
+        "Loaded search config for sites=%s search_term=%r location=%r "
+        "(proxies=%d, freehire key=%s)",
         search_config.get("site_name"),
         search_config.get("search_term"),
         search_config.get("location"),
         len(proxies) if proxies else 0,
+        "set" if freehire_api_key else "unset",
     )
 
-    jobs_df = scrape_jobs(proxies=proxies, **search_config)
+    jobs_df = scrape_jobs(
+        proxies=proxies, freehire_api_key=freehire_api_key, **search_config
+    )
     logger.info("Scraped %d job postings.", len(jobs_df))
 
     jobs_df = deduplicate_jobs(jobs_df)

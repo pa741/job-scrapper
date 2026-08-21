@@ -11,11 +11,26 @@ A small Python script that scrapes job postings via [JobSpy](https://github.com/
 - `scrape_jobs.py` — main script: loads config/secrets, calls `jobspy.scrape_jobs`, uploads a CSV to Azure Blob Storage.
 - `config.yaml` — non-secret search parameters (sites, search term, location, results count, etc.). New search options belong here, not as CLI flags or env vars.
 - `.env.example` — documents required environment variables with placeholder values. Real values go in a local, git-ignored `.env`.
-- `requirements.txt` — plain pip dependencies (no lockfile/poetry by design, to keep the template simple).
+- `requirements.txt` — plain pip dependencies (no lockfile/poetry by design, to keep the template simple). `python-jobspy` is pinned to a **tag of our own fork**, not PyPI — see below.
+
+## The JobSpy fork
+
+Upstream [speedyapply/JobSpy](https://github.com/speedyapply/JobSpy) stopped merging in
+February 2026, so this repo depends on [pa741/JobSpy](https://github.com/pa741/JobSpy)
+(branch `patches`) instead, installed from a GitHub archive tarball pinned to a tag.
+
+**Anything about how a board is scraped or which boards exist belongs in the fork, not
+here.** This repo only decides what to search for and where the CSV goes. To change the
+library: commit on `patches`, tag it (`v<upstream-version>-fh<n>`), then bump the URL in
+`requirements.txt` — the pin is what makes a build reproducible, so never point it at a
+branch. A tarball rather than `git+https` is deliberate: `python:3.11-slim` has no `git`.
+
+The fork currently adds `applicants`/`applicant_count` (LinkedIn) and the `freehire` source.
+Keep `main` tracking upstream so `patches` stays rebaseable.
 
 ## Conventions
 
-- **Secrets only via environment variables**, loaded with `python-dotenv`. Never hardcode connection strings, proxy credentials, or API keys — use `.env.example` placeholders and document the variable in the README.
+- **Secrets only via environment variables**, loaded with `python-dotenv`. Never hardcode connection strings, proxy credentials, or API keys — use `.env.example` placeholders and document the variable in the README. Read them in `scrape_jobs.py` and pass them into the library (as `HIREME_API_KEY` → `freehire_api_key` does); jobspy itself never touches `os.environ`, so there is one place to audit.
 - **Search parameters only via `config.yaml`.** Don't add argparse/CLI flags or extra env vars for search behavior — keep one config surface.
 - Keep the script dependency-light and single-file unless the user asks for more structure (e.g. multiple scrapers, scheduling, tests).
 - This repo has no test suite configured. If adding one, keep it minimal and don't require real Azure/proxy credentials to run (mock or skip network calls).

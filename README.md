@@ -2,6 +2,8 @@
 
 Scrapes job postings using [JobSpy](https://github.com/speedyapply/JobSpy) (Indeed, LinkedIn, ZipRecruiter, etc.), optionally routed through proxies, and uploads the results as a timestamped CSV to Azure Blob Storage.
 
+It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinned by tag in `requirements.txt`. Upstream stopped merging in February 2026; the fork adds LinkedIn applicant counts and [freehire.me](https://freehire.me) as a source. Changes to scraping behaviour belong there, not here.
+
 ## Prerequisites
 
 - Python 3.10+
@@ -27,8 +29,9 @@ Scrapes job postings using [JobSpy](https://github.com/speedyapply/JobSpy) (Inde
    | Variable | Description |
    | --- | --- |
    | `AZURE_STORAGE_CONNECTION_STRING` | Connection string for your Azure Storage account. Find it in the Azure Portal under **Storage Account → Access keys**, or run `az storage account show-connection-string --name <account> --resource-group <group>`. |
-   | `AZURE_CONTAINER_NAME` | Blob container to upload results to. Created automatically if it doesn't exist. Defaults to `jobs`. |
-   | `PROXIES` | Comma-separated list of proxies (`user:pass@host:port` or `host:port`). Leave blank to scrape without proxies. |
+   | `AZURE_CONTAINER_NAME` | Blob container to upload results to. Must already exist; the scraper fails if it doesn't, so a typo can't strand uploads somewhere nothing reads. Defaults to `jobs-landing`. |
+   | `HIREME_API_KEY` | **Optional.** A freehire.me personal API key, sent as a bearer token. freehire's job search is unauthenticated, so leaving this unset changes nothing about the results — a key only identifies the caller. |
+   | `PROXIES` | Comma-separated list of proxies (`user:pass@host:port` or `host:port`). Leave blank to scrape without proxies. Not applied to freehire, which is a public API with nothing to route around. |
 
    `.env` is git-ignored — only the placeholder `.env.example` is committed.
 
@@ -66,6 +69,23 @@ Or with Docker Compose, using the example `docker-compose.yml`: edit the `image:
 ```bash
 docker compose up
 ```
+
+## Sources
+
+`config.yaml` currently searches Indeed, LinkedIn, Google and freehire.
+
+freehire is the odd one out: it is not scraped but read through a documented public API that
+aggregates 227 ATS and job boards, covering IT/tech roles only. It needs no proxy and does
+not consume proxy bandwidth, and each posting carries the employer's own application link in
+`job_url_direct`. Glassdoor is omitted — see the comment in `config.yaml`.
+
+Three CSV columns come from the fork:
+
+| Column | Source | Meaning |
+| --- | --- | --- |
+| `applicants` | LinkedIn | The applicant caption verbatim, e.g. `Over 200 applicants`. Requires `linkedin_fetch_description: true`. |
+| `applicant_count` | LinkedIn | The figure parsed out of it, e.g. `200`. |
+| `source_board` | freehire | Which of freehire's crawled boards the posting came from, e.g. `greenhouse`. |
 
 ## Notes
 

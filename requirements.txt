@@ -1,4 +1,7 @@
-python-jobspy
+# Fork of python-jobspy, pinned by tag: adds LinkedIn applicant counts and the
+# freehire.me source. Sources at https://github.com/pa741/JobSpy (branch `patches`).
+# A GitHub archive rather than git+https, so the slim image needs no git binary.
+https://github.com/pa741/JobSpy/archive/refs/tags/v1.1.82-fh1.tar.gz
 pandas
 azure-storage-blob
 python-dotenv

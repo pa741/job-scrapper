@@ -4,7 +4,8 @@ services:
     image: ghcr.io/<owner>/<repo>:latest
     environment:
       AZURE_STORAGE_CONNECTION_STRING: <your-azure-storage-connection-string>
-      AZURE_CONTAINER_NAME: jobs
+      AZURE_CONTAINER_NAME: jobs-landing
+      HIREME_API_KEY: <optional-freehire-personal-api-key>
       PROXIES: <proxy1-e.g.-user:pass@host:port>,<proxy2>
     volumes:
       - ./config.yaml:/app/config.yaml:ro
