@@ -1,12 +1,26 @@
-# Searches to run, and the parameters passed to jobspy.scrape_jobs().
+# The defaults every search shares, and a fallback list of searches.
+#
+# WHICH SEARCHES RUN NORMALLY COMES FROM THE PLATFORM, not from this file. Each
+# user configures their own from the dashboard's Searches page, and the platform
+# publishes the whole enabled set to scraper-config/searches.json, which this
+# scraper reads at the start of every run. The `searches:` list below is used
+# only when nothing has been published - see the README.
+#
+# What stays here is what is true of *this machine* rather than of a search:
+# verbosity, whether LinkedIn descriptions are fetched, whether salaries are
+# annualised. A published search's options are merged over these, and the
+# platform omits an option nobody chose rather than sending null, so nothing
+# here is blanked by a form somebody left empty.
+#
 # See https://github.com/pa741/JobSpy for the supported site_name values and
 # search options - that is our fork, and it has options upstream does not.
 #
 # Each search is scraped and uploaded separately, as jobs/<name>_<timestamp>.csv.
 # The name is how the platform tells the searches apart, so it is the axis the
-# dashboard groups by - not just a filename.
+# dashboard groups by - not just a filename. For a published search that name is
+# the slug the platform assigned it.
 
-# Shared by every search. Anything a search names for itself wins.
+# Shared by every search, published or local. Anything a search names for itself wins.
 defaults:
   # glassdoor omitted: its CSRF-token endpoint currently 404s after Glassdoor's
   # Next.js migration, so every request gets rejected regardless of location/
@@ -45,6 +59,8 @@ defaults:
   # truncated preview. Costs a bigger response, not extra requests.
   freehire_full_description: true
 
+# Fallback only: run when the platform has published nothing. Once somebody adds
+# a search from the dashboard, this list stops being read.
 searches:
   # `name` is optional and defaults to the slugified search_term. Set it
   # explicitly when two searches would otherwise collide - the same search_term

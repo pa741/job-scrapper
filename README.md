@@ -31,11 +31,15 @@ It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinne
    | `AZURE_STORAGE_CONNECTION_STRING` | Connection string for your Azure Storage account. Find it in the Azure Portal under **Storage Account → Access keys**, or run `az storage account show-connection-string --name <account> --resource-group <group>`. |
    | `AZURE_CONTAINER_NAME` | Blob container to upload results to. Must already exist; the scraper fails if it doesn't, so a typo can't strand uploads somewhere nothing reads. Defaults to `jobs-landing`. |
    | `HIREME_API_KEY` | **Optional.** A freehire.me personal API key, sent as a bearer token. freehire's job search is unauthenticated, so leaving this unset changes nothing about the results — a key only identifies the caller. |
+   | `AZURE_CONFIG_CONTAINER_NAME` | **Optional.** Container the platform publishes the searches to, on the same account. Defaults to `scraper-config`; only set it if the platform was deployed with a different container name. |
    | `PROXIES` | Comma-separated list of proxies (`user:pass@host:port` or `host:port`). Leave blank to scrape without proxies. Not applied to freehire, which is a public API with nothing to route around. |
 
    `.env` is git-ignored — only the placeholder `.env.example` is committed.
 
-3. Edit `config.yaml` to set up your searches. `defaults:` holds what every search shares; each entry under `searches:` overrides the options it names. See the [fork's README](https://github.com/pa741/JobSpy) for the full list of supported options.
+3. Set up your searches. **The normal way is the platform's web UI** — see "Where the searches
+   come from" below. `config.yaml` holds the defaults every search shares whichever way they
+   arrive, plus a `searches:` list used only when nothing has been published. See the
+   [fork's README](https://github.com/pa741/JobSpy) for the full list of supported options.
 
    ```yaml
    defaults:
@@ -43,12 +47,38 @@ It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinne
      location: "London, UK"
      results_wanted: 500
 
-   searches:
+   searches:                          # fallback only
      - search_term: "software engineer"
-     - name: python-remote          # optional; defaults to the slugified search_term
+     - name: python-remote            # optional; defaults to the slugified search_term
        search_term: "python developer"
        is_remote: true
    ```
+
+## Where the searches come from
+
+Searches belong to people. Each user of the platform configures their own from its **Searches**
+page, and the platform writes the whole enabled set — everybody's — to `searches.json` in the
+`scraper-config` container on the same storage account results go to. This scraper reads it at
+the start of every run.
+
+**A blob rather than an API call.** This machine has no managed identity, so an API would mean a
+client secret or a function key living on the NAS, and the platform is built with no secret store
+at all. The scraper already holds a storage credential and already talks to one Azure service.
+
+What a published search says wins over `defaults:`; what it does not mention falls through to it.
+So the settings about *this machine* — verbosity, whether LinkedIn descriptions are fetched,
+whether salaries are annualised — stay here, and the search intent comes from the platform. The
+platform omits an option nobody chose rather than sending null, so a default here cannot be
+blanked by a form somebody left empty.
+
+| the blob is… | what happens |
+| --- | --- |
+| not there | warn and run `config.yaml`'s `searches:` — the state before the platform is used |
+| unreadable | **fail the run.** A corrupt or unreachable config is a bug rather than a lag, and quietly scraping a stale list instead would hide it every night |
+| empty | scrape nothing, exit clean. Somebody paused every search; running the local list would scrape exactly what they turned off |
+
+**Two people asking for the same thing are scraped twice, deliberately.** There is no coalescing
+and no cap, so the length and cost of a run is the sum of every enabled search across every user.
 
 ## Usage
 
@@ -56,7 +86,7 @@ It runs against [our own fork of JobSpy](https://github.com/pa741/JobSpy), pinne
 python scrape_jobs.py
 ```
 
-Each configured search is scraped **in turn** and uploaded as its own blob:
+Each search — published or local — is scraped **in turn** and uploaded as its own blob:
 
 ```
 jobs/<search-name>_<UTC timestamp>.csv
@@ -110,6 +140,7 @@ Three CSV columns come from the fork:
 | --- | --- | --- |
 | `applicants` | LinkedIn | The applicant caption verbatim, e.g. `Over 200 applicants`. Requires `linkedin_fetch_description: true`. |
 | `applicant_count` | LinkedIn | The figure parsed out of it, e.g. `200`. |
+| `offsite_apply` | LinkedIn | Whether the application is completed on the employer's own system rather than on LinkedIn. Requires `linkedin_fetch_description: true`. **Three-state**: empty means nothing was established, which is not the same as `False`. See below. |
 | `source_board` | freehire | Which of freehire's crawled boards the posting came from, e.g. `greenhouse`. |
 | `summary` | freehire | A 1–2 sentence synopsis of the posting. |
 | `freshness_class` | freehire | `fresh`, `stale` or `likely-evergreen`. |
@@ -121,6 +152,26 @@ freehire also fills `job_level`, `experience_range` and `company_num_employees`,
 existing columns rather than new ones. The four freshness signals are populated on every
 freehire posting and are the ones no scraped board can offer: a board repeats what a listing
 says about itself, these say whether the role has been recycled or the date refreshed.
+
+### Why `offsite_apply` exists
+
+LinkedIn used to publish the employer's apply URL on the guest job page, and the fork read it
+into `job_url_direct`. **It stopped.** Measured on 2026-09-01 against a live corpus, all 4,470
+LinkedIn postings of the previous week had no direct link, while the job detail page had been
+fetched for 98.4% of them - so the scraper looked and there was nothing there. Checked directly:
+`<code id="applyUrl">` is gone, every apply-redirect endpoint 404s, and a LinkedIn guest job page
+now contains no non-LinkedIn URL anywhere on it. The URL is not obtainable without signing in.
+
+What LinkedIn does still publish is *whether* the application is offsite, in two independent
+places - the apply button's `offsite-apply` icon, and the sign-in modal's `apply-link-offsite`
+impression id. `offsite_apply` reads both.
+
+**The empty state is the important one.** A consumer that reads a missing value as "LinkedIn
+hosts this application" gets the whole corpus wrong, which is exactly what happened. Empty means
+the scraper did not establish it; `False` means LinkedIn hosts it - Easy Apply.
+
+Indeed and freehire are unaffected: both still publish `job_url_direct`, and 92.6% of Indeed's
+point at a genuine external ATS rather than back at a board.
 
 ## Notes
 

@@ -5,7 +5,10 @@ services:
     environment:
       AZURE_STORAGE_CONNECTION_STRING: <your-azure-storage-connection-string>
       AZURE_CONTAINER_NAME: jobs-landing
+      AZURE_CONFIG_CONTAINER_NAME: scraper-config
       HIREME_API_KEY: <optional-freehire-personal-api-key>
       PROXIES: <proxy1-e.g.-user:pass@host:port>,<proxy2>
     volumes:
+      # Still mounted: it holds the operational defaults every search shares, and is
+      # the fallback for when the platform has published nothing yet.
       - ./config.yaml:/app/config.yaml:ro
